@@ -1,5 +1,5 @@
 locals {
-  project_name = "pinetop-test"
+  project_name = "tf-asg-demo"
 }
 
 # ECS Key Pair

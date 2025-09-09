@@ -60,9 +60,6 @@ resource "byteplus_scaling_configuration" "scaling_config_green" {
   instance_name              = "${local.project_name}-instance-green"
   key_pair_name              = data.byteplus_ecs_key_pairs.default_key_pair.key_pairs[0].key_pair_name
   security_group_ids         = [byteplus_security_group.app_sg.id]
-  eip_bandwidth              = 50
-  eip_isp                    = "BGP"
-  eip_billing_type           = "PostPaidByTraffic"
 
   volumes {
     volume_type          = "ESSD_PL0"
@@ -80,6 +77,8 @@ resource "byteplus_scaling_configuration" "scaling_config_green" {
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [ byteplus_scaling_group.asg_green ]
 }
 
 # Attach scaling configurations to scaling groups
