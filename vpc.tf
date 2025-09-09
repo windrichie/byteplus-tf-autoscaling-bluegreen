@@ -30,3 +30,32 @@ resource "byteplus_nat_gateway" "main" {
     ignore_changes = [tags]
   }
 }
+
+resource "byteplus_eip_address" "natgw_eip" {
+  name         = "${local.project_name}-nat-gw-eip"
+  bandwidth    = 200
+  billing_type = "PostPaidByTraffic"
+  isp          = "BGP"
+}
+
+resource "byteplus_eip_associate" "natgw_eip_association" {
+  allocation_id = byteplus_eip_address.natgw_eip.id
+  instance_id   = byteplus_nat_gateway.main.id
+  instance_type = "Nat"
+}
+
+resource "byteplus_snat_entry" "natgw_snat_entry_subnet1a" {
+  snat_entry_name = "${local.project_name}-snat-entry"
+  nat_gateway_id  = byteplus_nat_gateway.main.id
+  eip_id          = byteplus_eip_address.natgw_eip.id
+  subnet_id       = byteplus_subnet.subnet_1a.id
+  depends_on      = [ byteplus_eip_associate.natgw_eip_association ]
+}
+
+resource "byteplus_snat_entry" "natgw_snat_entry_subnet1b" {
+  snat_entry_name = "${local.project_name}-snat-entry"
+  nat_gateway_id  = byteplus_nat_gateway.main.id
+  eip_id          = byteplus_eip_address.natgw_eip.id
+  subnet_id       = byteplus_subnet.subnet_1b.id
+  depends_on      = [ byteplus_eip_associate.natgw_eip_association ]
+}
