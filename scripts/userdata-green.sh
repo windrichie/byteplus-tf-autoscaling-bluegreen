@@ -7,17 +7,14 @@ exec > >(tee /var/log/user-data/user-data.log) 2>&1
 
 echo "Starting user-data script execution at $(date)"
 
-# Update system with Ubuntu 22.04 considerations
+# Optimized package management for faster startup
 export DEBIAN_FRONTEND=noninteractive
-echo "Updating package lists..."
-apt-get update || { echo "Failed to update package lists"; exit 1; }
-
-echo "Upgrading packages (this may take a while)..."
-apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" || { echo "Failed to upgrade packages"; exit 1; }
-
-# Install dependencies with error handling
-echo "Installing Nginx and Git..."
-apt-get install -y nginx git || { echo "Failed to install required packages"; exit 1; }
+echo "Updating package lists and installing dependencies..."
+# Skip upgrade for faster startup - only update package lists and install what we need
+apt-get update && apt-get install -y --no-install-recommends nginx git && apt-get clean || { 
+    echo "Failed to update packages or install dependencies"; 
+    exit 1; 
+}
 
 # Create application directory
 mkdir -p /var/www/app || { echo "Failed to create application directory"; exit 1; }
@@ -39,39 +36,58 @@ server {
 }
 EOL
 
-# Create a basic index file
+# Get private IP from instance metadata
+echo "Fetching instance private IP..."
+PRIVATE_IP=$(curl -s http://100.96.0.96/latest/private_ipv4 || echo "Unable to fetch IP")
+
+# Create a basic index file with private IP information
 cat > /var/www/app/index.html <<EOL
 <!DOCTYPE html>
 <html>
 <head>
-    <title>GREEN ENVIRONMENT - v1.0.0</title>
+    <title>HELLO from BytePlus - v1.0.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
             line-height: 1.6;
+            background-color: #f0fff0;
         }
         h1 {
             color: #228B22;
         }
+        .info-box {
+            background-color: #e6ffe6;
+            border: 2px solid #228B22;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .ip-address {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #006600;
+        }
     </style>
 </head>
 <body>
-    <h1>GREEN ENVIRONMENT - v1.0.1</h1>
-    <p>Server is up and running on Ubuntu 22.04!</p>
-    <p>Setup time: $(date)</p>
+    <h1>HELLO from BytePlus - v1.0.1 (GREEN Environment)</h1>
+    <div class="info-box">
+        <p><strong>Server Status:</strong> Up and running on Ubuntu 22.04!</p>
+        <p><strong>Private IP Address:</strong> <span class="ip-address">$PRIVATE_IP</span></p>
+        <p><strong>Setup Time:</strong> $(date)</p>
+        <p><strong>Environment:</strong> Green Deployment</p>
+    </div>
 </body>
 </html>
 EOL
 
-# Test Nginx configuration - Ubuntu 22.04 specific
-echo "Testing Nginx configuration..."
-nginx -t || { echo "Nginx configuration test failed"; exit 1; }
-
-# Enable and restart Nginx
-echo "Enabling and starting Nginx..."
-systemctl enable nginx || { echo "Failed to enable Nginx service"; exit 1; }
-systemctl restart nginx || { echo "Failed to restart Nginx service"; exit 1; }
+# Test Nginx configuration and restart service
+echo "Testing Nginx configuration and restarting service..."
+nginx -t && systemctl enable nginx && systemctl restart nginx || { 
+    echo "Failed to configure or restart Nginx service"; 
+    exit 1; 
+}
 
 # Add version identifier for blue/green distinction
 echo "GREEN ENVIRONMENT - v1.0.1" > /var/www/app/version.txt
