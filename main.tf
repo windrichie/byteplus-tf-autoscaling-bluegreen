@@ -29,7 +29,7 @@ resource "byteplus_security_group_rule" "app_sg_ingress_ssh" {
   protocol          = "tcp"
   port_start        = "22"
   port_end          = "22"
-  cidr_ip           = "0.0.0.0/0"
+  cidr_ip           = "100.64.0.0/10"
   description       = "allow ingress SSH port"
 }
 
